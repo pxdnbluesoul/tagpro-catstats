@@ -1,3 +1,12 @@
+// ==UserScript==
+// @name       My Fancy New Userscript
+// @namespace  http://use.i.E.your.homepage/
+// @version    0.1
+// @description  enter something useful
+// @match      http://tag-pro-map-editor.peterreid.net/
+// @copyright  2012+, You
+// ==/UserScript==
+
 catstats = (function(catstats) {
 
   var stats = null;
@@ -40,7 +49,6 @@ catstats = (function(catstats) {
       $export.insertAfter($el);
     });
     
-    
     tagpro.socket.on('p', function (newData) {
       newData = newData.u || newData;
       for(var i = 0; i < newData.length; i++) {
@@ -51,6 +59,7 @@ catstats = (function(catstats) {
         if(!player) {
           players[playerNewData.id] = {};
           player = players[playerNewData.id];
+          player['team'] = player.team;
           player['arrival'] = tagpro.gameEndsAt - now;
           player['bombtime'] = 0;
           player['tagprotime'] = 0;
@@ -61,6 +70,13 @@ catstats = (function(catstats) {
           player['griptr'] = false;
           player['speedtr'] = false;
           player['diftotal'] = 0;
+          player['bombs'] = 0;
+          player['hadbomb'] = false;
+          player['tagpros'] = 0;
+          player['hadtagpro'] = false;
+          player['grips'] = 0;
+          player['hadgrip'] = false;
+          player['powerups'] = 0;
           updatePlayerData(tagpro.players[playerNewData.id]);
         }
         else {
@@ -79,8 +95,20 @@ catstats = (function(catstats) {
                 player[statName + 'time'] += now - player[statName + 'start'];
                 player[statName+ 'tr'] = false;
               }
+            if(!player["had"+statName] && playerNewData[statName]) {
+              player[statName+"s"] += 1;
+              player["powerups"] += 1;
+              player["had"+statName] = true;
             }
-            if (typeof (playerNewData[statName]) != "object" ) player[statName] = playerNewData[statName];
+            else if (player["had"+statName] && !playerNewData[statName]) {
+              player["had"+statName] = false;
+            }
+          }
+            if (typeof (playerNewData[statName]) != "object" ) {
+              player[statName] = playerNewData[statName];
+
+            }
+
           }
         }
       }
@@ -147,6 +175,17 @@ catstats = (function(catstats) {
     recordStats();
     exportCSV();
   }
+  function sum(players, stat) {
+    var sum = 0;
+    for(var x=0; x<players.length; x++) {
+      if(players[x] !== undefined) {
+      var player = players[x] ? players[x] : {};
+      sum += player[stat] ? player[stat] : 0;
+    }
+  }
+    return sum;
+  }
+
   function recordStats() {
     var now = Date.now();
     for(var playerId in tagpro.players) updateStatsAfterDeparture(players[playerId], now); //tagpro.players is a list of all the players who are still in game
@@ -174,10 +213,90 @@ catstats = (function(catstats) {
         'bombtime':          player['bombtime']   || 0,
         'tagprotime':        player['tagprotime'] || 0,
         'griptime':          player['griptime']   || 0,
-        'speedtime':         player['speedtime']  || 0
+        'speedtime':         player['speedtime']  || 0,
+        'tagpros':           player['tagpros']    || 0,
+        'grips':             player['grips']      || 0,
+        'bombs':             player['bombs']      || 0,
+        'powerups':          player['powerups']   || 0,
+        'team':              player.team == 1 ? "red" : "blue",
+        'degree':            player.degree, 
       }
-    })
+    });
+
+    redPlayers = playerIds.map(function(id) {if(players[id].team == 1) {return players[id]}});
+    bluePlayers = playerIds.map(function(id) {if(players[id].team == 2) {return players[id]}});
+
+    console.log(redPlayers);
+    console.log(bluePlayers);
+
+    teamHeader = ['name','color', 'score','tags','pops','grabs','drops','hold','captures','prevent','returns','support','team captures','opponent captures','arrival','departure','bombtime','tagprotime','griptime','speedtime','tagpros', 'grips','bombs','powerups', 'map'];
+    stats.push({});
+    stats.push(teamHeader);
+    console.log(redPlayers.length);
+    if(redPlayers.length > 0) {
+      var red={
+            'name': '',
+            'color': 'red',
+            'score':             sum(redPlayers, 'score'),
+            'tags':              sum(redPlayers, 's-tags'),
+            'pops':              sum(redPlayers, 's-pops'),
+            'grabs':             sum(redPlayers, 's-grabs'),
+            'drops':             sum(redPlayers, 's-drops'),
+            'hold':              sum(redPlayers, 's-hold'),
+            'captures':          sum(redPlayers, 's-captures'),
+            'prevent':           sum(redPlayers, 's-prevent'),
+            'returns':           sum(redPlayers, 's-returns'),
+            'support':           sum(redPlayers, 's-support'),
+            'team captures':     tagpro.score.r,
+            'opponent captures': tagpro.score.b,
+            'arrival':           sum(redPlayers, 'arrival'),
+            'departure':         sum(redPlayers, 'departure'),
+            'bombtime':          sum(redPlayers, 'bombtime'),
+            'tagprotime':        sum(redPlayers, 'tagprotime'),
+            'griptime':          sum(redPlayers, 'griptime'),
+            'speedtime':         sum(redPlayers, 'speedtime'),
+            'tagpros':           sum(redPlayers, 'tagpros'),
+            'grips':             sum(redPlayers, 'grips'),
+            'bombs':             sum(redPlayers, 'bombs'),
+            'powerups':          sum(redPlayers, 'powerups'),
+            'map':               $("#mapInfo").text(), 
+        };
+      stats.push(red);
+    }
+    console.log(bluePlayers.length);
+    if(bluePlayers.length > 0) {
+      var blue={
+          'name': '',
+          'color': 'blue',
+          'score':             sum(bluePlayers, 'score'),
+          'tags':              sum(bluePlayers, 's-tags'),
+          'pops':              sum(bluePlayers, 's-pops'),
+          'grabs':             sum(bluePlayers, 's-grabs'),
+          'drops':             sum(bluePlayers, 's-drops'),
+          'hold':              sum(bluePlayers, 's-hold'),
+          'captures':          sum(bluePlayers, 's-captures'),
+          'prevent':           sum(bluePlayers, 's-prevent'),
+          'returns':           sum(bluePlayers, 's-returns'),
+          'support':           sum(bluePlayers, 's-support'),
+          'team captures':     tagpro.score.b,
+          'opponent captures': tagpro.score.r,
+          'arrival':           sum(bluePlayers, 'arrival'),
+          'departure':         sum(bluePlayers, 'departure'),
+          'bombtime':          sum(bluePlayers, 'bombtime'),
+          'tagprotime':        sum(bluePlayers, 'tagprotime'),
+          'griptime':          sum(bluePlayers, 'griptime'),
+          'speedtime':         sum(bluePlayers, 'speedtime'),
+          'tagpros':           sum(bluePlayers, 'tagpros'),
+          'grips':             sum(bluePlayers, 'grips'),
+          'bombs':             sum(bluePlayers, 'bombs'),
+          'powerups':          sum(bluePlayers, 'powerups'),
+          'map':               $("#mapInfo").text(), 
+        };
+      stats.push(blue);
+      }
+
   }
+
 
   function exportCSV() {
     var file = csv(stats);
