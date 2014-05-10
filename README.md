@@ -6,16 +6,10 @@ Save a tagpro scoreboard to `csv`
 
 To install:
 
-* Download the [tagpro-catstats.crx](https://github.com/brainss/tagpro-catstats/blob/master/tagpro-catstats.crx?raw=true) file (right click; save as)
 * Open `tools->extensions` in chrome/chromium
-* Drag and drop `tagpro-catstats.crx` onto the extensions page
-* Click add
+* Click "Load unpacked extension" after ticking "Developer Mode"
+* Select the src folder and add
 
 ### Usage
 
-On the scoreboard a new link will appear to `Save as .csv` Click this at
-anytime to automatically save the scoreboard when the game ends. If a
-player leaves at the end before you save, the scoreboard will still save
-his/her stats.
-
-This `csv` file can be imported into a spreadsheet.
+Click "Save as .csv" on the score board, or use [this](https://gist.githubusercontent.com/anonymous/5fd27b9c1e012bf5e248/raw/f6702f138ab730bf83ae7bfadda9e03ac941e04a/StatSaver.js) with grease monkey / tamper monkey to download stats automatically after the game.
