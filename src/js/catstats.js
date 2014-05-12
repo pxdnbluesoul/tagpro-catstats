@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name       My Fancy New Userscript
-// @namespace  http://use.i.E.your.homepage/
-// @version    0.1
-// @description  enter something useful
-// @match      http://tag-pro-map-editor.peterreid.net/
-// @copyright  2012+, You
+// @name       Tagpro.me Sync Agent
+// @namespace  http://tagpro.me/downloads.php
+// @version    1.0.0
+// @description  Uploads game data from Tagpro to Tagpro.me stat-tracking service.
+// @match      http://*.koalabeast.com/*, http://*.jukejuice.com/*, http://tagpro.me/*
+// @copyright  2014 bluesoul, forked from MercuryRising/tagpro-catstats https://github.com/MercuryRising/tagpro-catstats
 // ==/UserScript==
 
 catstats = (function(catstats) {
@@ -14,7 +14,7 @@ catstats = (function(catstats) {
   function updateStatsAfterDeparture (player, now) {
     var now = now || Date.now();
     player['departure'] = tagpro.gameEndsAt - now;
-    player['minutes'] = Math.round((player['arrival']-player['departure'])/6000)/10;
+    player['played'] = Math.round((player['arrival']-player['departure'])/1000); // give us a seconds count for tracking stats per minute with better accuracy.
     if (player['bombtr']) {
       player['bombtime'] += now - player['bombstart'];
       player['bombtr'] = false;
@@ -44,9 +44,10 @@ catstats = (function(catstats) {
     $(document).ready(function() {
       var $el = $('#options').find('table');
       var $export = $('<a>', {href: '#', id: 'saveAsCSVLink'})
-        .text('Save as .csv')
+        .text('Upload game to Tagpro.me')
         .click(registerExport);
       $export.insertAfter($el);
+	  
     });
     
     tagpro.socket.on('p', function (newData) {
@@ -195,7 +196,7 @@ catstats = (function(catstats) {
       return {
         'name':              player['name']       || '',
         'plusminus':         player['diftotal']   || 0,
-        'minutes':           player['minutes']    || 0,
+        'played':            player['played']    || 0,
         'score':             player['score']      || 0,
         'tags':              player['s-tags']     || 0,
         'pops':              player['s-pops']     || 0,
@@ -206,8 +207,8 @@ catstats = (function(catstats) {
         'prevent':           player['s-prevent']  || 0,
         'returns':           player['s-returns']  || 0,
         'support':           player['s-support']  || 0,
-        'team captures':     player.team == 1 ? tagpro.score.r : tagpro.score.b,
-        'opponent captures': player.team == 1 ? tagpro.score.b : tagpro.score.r,
+        'teamcaps':     player.team == 1 ? tagpro.score.r : tagpro.score.b, // removing space for easier work with DB
+        'oppcaps': player.team == 1 ? tagpro.score.b : tagpro.score.r, // removing space for easier work with DB
         'arrival':           player['arrival']    || 0,
         'departure':         player['departure']  || 0,
         'bombtime':          player['bombtime']   || 0,
@@ -218,93 +219,26 @@ catstats = (function(catstats) {
         'grips':             player['grips']      || 0,
         'bombs':             player['bombs']      || 0,
         'powerups':          player['powerups']   || 0,
-        'team':              player.team == 1 ? "red" : "blue",
-        'degree':            player.degree, 
+        'team':              player.team == 1 ? "1" : "0", // we'll translate it back to red/blue on the web side. 1 is red, 0 is blue.
+        'degree':            player.degree,
+		'win':				 tagpro.score.r == tagpro.score.b ? '2' : tagpro.score.r > tagpro.score.b ? '1' : '0', // the two bits this takes up outweighs the math to determine the winner
+		'map':               $("#mapInfo").text(), // TODO: send this as a one-off in the POST to avoid sending the same map data a dozen times per request. adds ~300 bytes to transmission.
       }
     });
 
-    redPlayers = playerIds.map(function(id) {if(players[id].team == 1) {return players[id]}});
-    bluePlayers = playerIds.map(function(id) {if(players[id].team == 2) {return players[id]}});
-
-    console.log(redPlayers);
-    console.log(bluePlayers);
-
-    teamHeader = ['name','color', 'score','tags','pops','grabs','drops','hold','captures','prevent','returns','support','team captures','opponent captures','arrival','departure','bombtime','tagprotime','griptime','speedtime','tagpros', 'grips','bombs','powerups', 'map'];
-    stats.push({});
-    stats.push(teamHeader);
-    console.log(redPlayers.length);
-    if(redPlayers.length > 0) {
-      var red={
-            'name': '',
-            'color': 'red',
-            'score':             sum(redPlayers, 'score'),
-            'tags':              sum(redPlayers, 's-tags'),
-            'pops':              sum(redPlayers, 's-pops'),
-            'grabs':             sum(redPlayers, 's-grabs'),
-            'drops':             sum(redPlayers, 's-drops'),
-            'hold':              sum(redPlayers, 's-hold'),
-            'captures':          sum(redPlayers, 's-captures'),
-            'prevent':           sum(redPlayers, 's-prevent'),
-            'returns':           sum(redPlayers, 's-returns'),
-            'support':           sum(redPlayers, 's-support'),
-            'team captures':     tagpro.score.r,
-            'opponent captures': tagpro.score.b,
-            'arrival':           sum(redPlayers, 'arrival'),
-            'departure':         sum(redPlayers, 'departure'),
-            'bombtime':          sum(redPlayers, 'bombtime'),
-            'tagprotime':        sum(redPlayers, 'tagprotime'),
-            'griptime':          sum(redPlayers, 'griptime'),
-            'speedtime':         sum(redPlayers, 'speedtime'),
-            'tagpros':           sum(redPlayers, 'tagpros'),
-            'grips':             sum(redPlayers, 'grips'),
-            'bombs':             sum(redPlayers, 'bombs'),
-            'powerups':          sum(redPlayers, 'powerups'),
-            'map':               $("#mapInfo").text(), 
-        };
-      stats.push(red);
-    }
-    console.log(bluePlayers.length);
-    if(bluePlayers.length > 0) {
-      var blue={
-          'name': '',
-          'color': 'blue',
-          'score':             sum(bluePlayers, 'score'),
-          'tags':              sum(bluePlayers, 's-tags'),
-          'pops':              sum(bluePlayers, 's-pops'),
-          'grabs':             sum(bluePlayers, 's-grabs'),
-          'drops':             sum(bluePlayers, 's-drops'),
-          'hold':              sum(bluePlayers, 's-hold'),
-          'captures':          sum(bluePlayers, 's-captures'),
-          'prevent':           sum(bluePlayers, 's-prevent'),
-          'returns':           sum(bluePlayers, 's-returns'),
-          'support':           sum(bluePlayers, 's-support'),
-          'team captures':     tagpro.score.b,
-          'opponent captures': tagpro.score.r,
-          'arrival':           sum(bluePlayers, 'arrival'),
-          'departure':         sum(bluePlayers, 'departure'),
-          'bombtime':          sum(bluePlayers, 'bombtime'),
-          'tagprotime':        sum(bluePlayers, 'tagprotime'),
-          'griptime':          sum(bluePlayers, 'griptime'),
-          'speedtime':         sum(bluePlayers, 'speedtime'),
-          'tagpros':           sum(bluePlayers, 'tagpros'),
-          'grips':             sum(bluePlayers, 'grips'),
-          'bombs':             sum(bluePlayers, 'bombs'),
-          'powerups':          sum(bluePlayers, 'powerups'),
-          'map':               $("#mapInfo").text(), 
-        };
-      stats.push(blue);
-      }
-
-  }
-
+  } // team stats have been removed as they can be extrapolated from the existing data
 
   function exportCSV() {
     var file = csv(stats);
+	var put = "csv=";
+	put += file;
+	
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("POST","http://tagpro.me/ajax.php",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send(put);
 
     var a = document.createElement('a');
-    a.download = 'tagpro-'+Date.now()+'.csv';
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(file)
-
     var event = document.createEvent('MouseEvents')
     event.initEvent('click', true, false);
 
@@ -313,23 +247,25 @@ catstats = (function(catstats) {
   }
 
   function csv(array) {
-    var result = '';
-    array.forEach(function(player, i) {
-      var keys = Object.keys(player);
-
+	var result = '';
+	array.forEach(function(player, i) {
+	var keys = Object.keys(player);
+	var comma = String.fromCharCode(127);
+	var linefeed = String.fromCharCode(129);
       // write header
       if(i == 0)
-        result = keys.map(wrap).join(',') + '\r\n';
+        result = keys.map(wrap).join(comma) + '\r\n'; //ASCII dec 32-126 are available namespace for players
 
       // write row
-      result += keys.map(function(k) { return wrap(player[k]); }).join(',') + '\r\n';
+      result += keys.map(function(k) { return wrap(player[k]); }).join(comma) + '\r\n'; //ASCII dec 32-126 are available namespace for players
 
     });
 
     return result;
 
     function wrap(v) {
-      return '"'+v+'"';
+		var quotes = String.fromCharCode(128);
+      return quotes + v + quotes; //ASCII dec 32-126 are available namespace for players
     }
   }
 
