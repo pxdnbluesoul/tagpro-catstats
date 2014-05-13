@@ -1,6 +1,6 @@
-# catstats
+# tagprome-sync
 
-Save a tagpro scoreboard to `csv`
+Syncs stats from a game of Tagpro to the Tagpro.me stat tracker.
 
 ### Install
 
@@ -12,4 +12,4 @@ To install:
 
 ### Usage
 
-Click "Save as .csv" on the score board, or use [this](https://gist.githubusercontent.com/anonymous/5fd27b9c1e012bf5e248/raw/f6702f138ab730bf83ae7bfadda9e03ac941e04a/StatSaver.js) with grease monkey / tamper monkey to download stats automatically after the game.
+Once extension is enabled, no user interaction is required. Games will be automatically added to [tagpro.me](http://tagpro.me) on completion.
