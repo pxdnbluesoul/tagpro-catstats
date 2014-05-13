@@ -1,7 +1,7 @@
 {
-  "name": "tagprome-catstats",
-  "description": "bluesoul's catstats fork, for use with tagpro.me",
-  "version": "0.1.0",
+  "name": "tagprome-sync",
+  "description": "tagpro.me sync extension",
+  "version": "1.1.0",
   "manifest_version": 2,
   "permissions": [],
   "content_scripts": [

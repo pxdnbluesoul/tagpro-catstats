@@ -41,14 +41,6 @@ catstats = (function(catstats) {
   }
 
   function setup() {
-    $(document).ready(function() {
-      var $el = $('#options').find('table');
-      var $export = $('<a>', {href: '#', id: 'saveAsCSVLink'})
-        .text('Upload game to Tagpro.me')
-        .click(registerExport);
-      $export.insertAfter($el);
-	  
-    });
     
     tagpro.socket.on('p', function (newData) {
       newData = newData.u || newData;
@@ -148,6 +140,7 @@ catstats = (function(catstats) {
       for(var playerId in players) players[playerId]['arrival'] = e.time; //players who were there before the game started have their arrival time set to the time when the game started
     });
     tagpro.socket.on('end', recordStats);
+	registerExport();
   }
 
   function registerExport() {
@@ -167,10 +160,7 @@ catstats = (function(catstats) {
         getEmergencyCSV();
       }
     });
-    $('#saveAsCSVLink')
-      .off()
-      .text('Scoreboard will be saved when game ends!')
-      .css('cursor', 'default');
+
   }
   function getEmergencyCSV () {
     recordStats();
