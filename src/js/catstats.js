@@ -255,7 +255,8 @@ catstats = (function(catstats) {
 
     function wrap(v) {
 		var quotes = String.fromCharCode(128);
-      return quotes + v + quotes; //ASCII dec 32-126 are available namespace for players
+		var w = encodeURIComponent(v);
+      return quotes + w + quotes; //ASCII dec 32-126 are available namespace for players
     }
   }
 
