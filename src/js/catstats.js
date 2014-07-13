@@ -213,6 +213,8 @@ catstats = (function(catstats) {
         'degree':            player.degree,
 		'win':				 tagpro.score.r == tagpro.score.b ? '2' : tagpro.score.r > tagpro.score.b ? '1' : '0', // the two bits this takes up outweighs the math to determine the winner
 		'map':               $("#mapInfo").text(), // TODO: send this as a one-off in the POST to avoid sending the same map data a dozen times per request. adds ~300 bytes to transmission.
+		'host':		tagpro.host,
+		'auth':		player['auth'] == true ? "1" : "0",
       }
     });
 
